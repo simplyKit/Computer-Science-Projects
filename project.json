@@ -1,21 +1,20 @@
 {
-    "name": "compscience-project1",
-    "version": "1.0.0",
-    "description": "Something goes here",
-    "main": "src/index.js",
-    "scripts": {
-      "start": "node index.js"
-    },
-    "author": {
-        "name":"JW",
-        "website":"https://github.com/thatWest7014"
-    },
-    "license": "ISC",
-    "dependencies": {
-      "express": "^4.21.2"
-    },
-    "devDependencies": {
-      "eslint":"^9.39.1"
-    }
+  "name": "compscience-project1",
+  "version": "1.0.0",
+  "description": "Something goes here",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": {
+      "name":"JW",
+      "website":"https://github.com/thatWest7014"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "eslint":"^9.39.1"
   }
-  
+}
