@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Database Demo</title>
+    </head>
+    <body>
+        <h1>Database Demo</h1>
+        <form id="databaseForm">
+            <label for="type">Database Interaction Type</label>
+            <select name="type" id="type" required>
+                <option value="WRITE">Write/Set</option>
+                <option value="READ">Read/Get</option>
+                <option value="DELETE">Delete/Rem</option>
+            </select>
+        
+            <label for="category">Database Namespace</label>
+            <input class="textbox" type="text" name="namespaceid" id="namespaceid" placeholder="Ex: database" required />
+        
+            <label for="username">Database Key</label>
+            <input class="textbox" type="text" name="databasekey" id="databasekey" placeholder="Ex: key1" required />
+        
+            <label for="details">Database Value</label>
+            <input class="textbox" type="text" name="databsvalue" id="databsvalue" placeholder="Ex: value1" required />       
+        
+            <button type="submit">Submit Action</button>
+        </form>
+        <script>
+            const form = document.getElementById('databaseForm');
+            window.addEventListener('DOMContentLoaded', () => { // Clear on every page load
+                form.reset();
+            });
+        
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const jsonData = Object.fromEntries(formData.entries());
+            
+                const type = jsonData.type
+                const KVint = jsonData.namespaceid
+                const KVkey = jsonData.databasekey
+                const KVval = jsonData.databsvalue
+
+                switch (type) {
+                    case 'WRITE':
+                        fetch('http://127.0.0.1:8080/data/write', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json;charset=UTF-8'
+                            },
+                            body: JSON.stringify({ 'dbl':KVint,'key':KVkey,'value':KVval }) 
+                        })
+                        .catch(error => console.error('Error:', error));
+                        break;
+                    case 'READ':
+                        fetch('http://127.0.0.1:8080/data/read', {
+                            method: 'GET',
+                            headers: {
+                              'Content-Type': 'application/json;charset=UTF-8'
+                            },
+                            body: JSON.stringify({ 'dbl':KVint,'key':KVkey }) 
+                        })
+                        .catch(error => console.error('Error:', error));
+                        break;
+                    case 'DELETE':
+                        fetch('http://127.0.0.1:8080/data/delete', {
+                            method: 'DELETE',
+                            headers: {
+                              'Content-Type': 'application/json;charset=UTF-8'
+                            },
+                            body: JSON.stringify({ 'dbl':KVint,'key':KVkey }) 
+                        })
+                        .catch(error => console.error('Error:', error));
+                        break;
+                    default:
+                        alert(`Unexpected database type!\n(${type})`);
+                        throw new Error(`Unexpected database type! (${type})`);
+                        break;
+                }
+            });
+        </script>
+    </body>
+</html>
