@@ -8,8 +8,8 @@
         <form id="databaseForm">
             <label for="type">Database Interaction Type</label>
             <select name="type" id="type" required>
-                <option value="WRITE">Write/Set</option>
-                <option value="READ">Read/Get</option>
+                <option value="WRITE">Write/Update</option>
+                <option value="READ">Read/Get/Find</option>
                 <option value="DELETE">Delete/Rem</option>
             </select>
         
@@ -19,12 +19,18 @@
             <label for="username">Database Key</label>
             <input class="textbox" type="text" name="databasekey" id="databasekey" placeholder="Ex: key1" required />
         
-            <label for="details">Database Value</label>
-            <input class="textbox" type="text" name="databsvalue" id="databsvalue" placeholder="Ex: value1" required />       
+            <label for="details">Database Value(Write Only!!)</label>
+            <input class="textbox" type="text" name="databsvalue" id="databsvalue" placeholder="Ex: value1" />       
         
             <button type="submit">Submit Action</button>
         </form>
+        <button id="closeBtn">Quit & Close</button>
         <script>
+            document.getElementById('closeBtn').addEventListener('click', function(){
+                try { window.close(); } catch(e) {}
+                if (window.opener && !window.opener.closed) {window.opener.focus();}
+            });
+            
             const form = document.getElementById('databaseForm');
             window.addEventListener('DOMContentLoaded', () => { // Clear on every page load
                 form.reset();
@@ -53,11 +59,15 @@
                         break;
                     case 'READ':
                         fetch('http://127.0.0.1:8080/data/read', {
-                            method: 'GET',
+                            method: 'POST',
                             headers: {
                               'Content-Type': 'application/json;charset=UTF-8'
                             },
                             body: JSON.stringify({ 'dbl':KVint,'key':KVkey }) 
+                        })
+                        .then(response => response.text())
+                        .then(value => {
+                            alert(value);
                         })
                         .catch(error => console.error('Error:', error));
                         break;

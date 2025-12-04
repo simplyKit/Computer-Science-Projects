@@ -22,8 +22,7 @@ app.post('/data/write', async (req, res) => { // Runs when the endpoint is hit b
     const val = body?.value
     if (key == null || val == null) return res.status(400).json({ error: `Invalid key/body object value` });
     try {
-        await setKVData(dbl,key,val)
-        res.status(200).json({ error: `Success!` });
+        return res.json(await setKVData(dbl,key,val));
     } catch(err) {
         console.error(err);
         res.status(500).json({ error: `Something went wrong! ${err}` });
@@ -36,22 +35,20 @@ app.delete('/data/delete', async (req, res) => { // Runs when the endpoint is hi
     const key = body?.key
     if (key == null) return res.status(400).json({ error: `Invalid key/body object value` });
     try {
-        await remKVData(dbl,key)
-        res.status(200).json({ error: `Success!` });
+        return res.json(await remKVData(dbl,key));
     } catch(err) {
         console.error(err);
         res.status(500).json({ error: `Something went wrong! ${err}` });
     }
 });
 
-app.get('/data/read', async (req, res) => { // Runs when the endpoint is hit by an HTTP GET Request
+app.post('/data/read', async (req, res) => { // Runs when the endpoint is hit by an HTTP GET Request
     let body = req.body || {}
     const dbl = body?.dbl || 'default'
     const key = body?.key
     if (key == null) return res.status(400).json({ error: `Invalid key/body object value` });
     try {
-        await getKVData(dbl,key)
-        res.status(200).json({ error: `Success!` });
+        return res.json(await getKVData(dbl,key));
     } catch(err) {
         console.error(err);
         res.status(500).json({ error: `Something went wrong! ${err}` });
