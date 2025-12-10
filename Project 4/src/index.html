@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Database Demo</title>
+    </head>
+    <body>
+        <h1>Database Demo</h1>
+        <form id="databaseForm">
+            <label for="type">Database Interaction Type</label>
+            <select name="type" id="type" required>
+                <option value="WRITE">Write/Update</option>
+                <option value="READ">Read/Get/Find</option>
+                <option value="DELETE">Delete/Rem</option>
+            </select>
+        
+            <label for="category">Database Namespace</label>
+            <input class="textbox" type="text" name="namespaceid" id="namespaceid" placeholder="Ex: database" required />
+        
+            <label for="username">Database Key</label>
+            <input class="textbox" type="text" name="databasekey" id="databasekey" placeholder="Ex: key1" required />
+        
+            <label for="details">Database Value(Write Only!!)</label>
+            <input class="textbox" type="text" name="databsvalue" id="databsvalue" placeholder="Ex: value1" />       
+        
+            <button type="submit">Submit Action</button>
+        </form>
+        <button id="closeBtn">Quit & Close</button>
+        <script>
+            document.getElementById('closeBtn').addEventListener('click', function(){
+                try { window.close(); } catch(e) {}
+                if (window.opener && !window.opener.closed) {window.opener.focus();}
+            });
+            
+            const form = document.getElementById('databaseForm');
+            window.addEventListener('DOMContentLoaded', () => { // Clear on every page load
+                form.reset();
+            });
+        
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const jsonData = Object.fromEntries(formData.entries());
+            
+                const type = jsonData.type
+                const KVint = jsonData.namespaceid
+                const KVkey = jsonData.databasekey
+                const KVval = jsonData.databsvalue
+
+                const params = new URLSearchParams();
+                if (KVint) params.append('db', KVint);
+                params.append('key', KVkey);
+                if (KVval) params.append('value', KVval);
+
+                switch (type) {
+                    case 'WRITE':
+                        fetch(`http://127.0.0.1:8080/data/write?${params.toString()}`)
+                        .catch(error => console.error('Error:', error));
+                        break;
+                    case 'READ':
+                        fetch(`http://127.0.0.1:8080/data/read?${params.toString()}`)
+                        .then(response => response.text())
+                        .then(value => {
+                            alert(value);
+                        })
+                        .catch(error => console.error('Error:', error));
+                        break;
+                    case 'DELETE':
+                        fetch(`http://127.0.0.1:8080/data/delete?${params.toString()}`)
+                        .catch(error => console.error('Error:', error));
+                        break;
+                    default:
+                        alert(`Unexpected database type!\n(${type})`);
+                        throw new Error(`Unexpected database type! (${type})`);
+                        break;
+                }
+            });
+        </script>
+    </body>
+</html>

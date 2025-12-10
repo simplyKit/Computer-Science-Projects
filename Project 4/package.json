@@ -1,0 +1,23 @@
+{
+  "name": "cs2-project1",
+  "version": "1.0.0",
+  "description": "Database example using Node.js and Express.js",
+  "license": "ISC",
+  "author": {
+    "name": "JW",
+    "url": "https://github.com/simplyKit"
+  },
+  "contributors": [
+    "https://github.com/thatWest7014"
+  ],
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "exit 0"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1"
+  }
+}
