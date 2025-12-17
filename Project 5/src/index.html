@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Quiz Application</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width:  800px;
+                margin:  50px auto;
+                padding: 20px;
+            }
+            
+            .quiz-container {
+                border: 1px solid #ccc;
+                padding: 20px;
+                border-radius: 8px;
+                background-color: #f9f9f9;
+            }
+            
+            .quiz-header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            
+            .question-section {
+                margin:  20px 0;
+            }
+            
+            .question-text {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 15px;
+                color: #333;
+            }
+            
+            .question-progress {
+                font-size: 14px;
+                color: #666;
+                margin-bottom: 10px;
+            }
+            
+            .answers {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .answer-option {
+                padding: 12px;
+                border: 2px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+                background-color: #fff;
+                transition: all 0.3s ease;
+            }
+            
+            .answer-option:hover {
+                border-color: #007bff;
+                background-color: #f0f8ff;
+            }
+            
+            .answer-option input[type="radio"] {
+                margin-right: 10px;
+                cursor: pointer;
+            }
+            
+            .answer-option. selected {
+                border-color: #007bff;
+                background-color: #e3f2fd;
+            }
+            
+            .button-group {
+                display: flex;
+                gap: 10px;
+                margin-top: 30px;
+                justify-content: center;
+            }
+            
+            button {
+                padding: 10px 20px;
+                font-size: 16px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                background-color: #007bff;
+                color: white;
+                transition: background-color 0.3s ease;
+            }
+            
+            button:hover {
+                background-color: #0056b3;
+            }
+            
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+            
+            #closeBtn {
+                background-color: #6c757d;
+            }
+            
+            #closeBtn:hover {
+                background-color: #545b62;
+            }
+            
+            .results-section {
+                display: none;
+                text-align: center;
+                margin-top: 30px;
+                padding: 20px;
+                background-color: #e8f5e9;
+                border-radius: 4px;
+            }
+            
+            .results-section.show {
+                display: block;
+            }
+            
+            .score {
+                font-size: 32px;
+                font-weight:  bold;
+                color: #2e7d32;
+                margin:  20px 0;
+            }
+            
+            .quiz-selector {
+                margin-bottom: 20px;
+            }
+            
+            .quiz-selector select {
+                padding: 10px;
+                font-size: 16px;
+                border: 2px solid #ddd;
+                border-radius:  4px;
+                cursor: pointer;
+            }
+            
+            .loading {
+                text-align: center;
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="quiz-container">
+            <div class="quiz-header">
+                <h1>Quiz Application</h1>
+            </div>
+            
+            <div class="quiz-selector" id="quizSelector">
+                <label for="quizSelect">Select a Quiz:</label>
+                <select id="quizSelect" required>
+                    <option value="">-- Choose a Quiz --</option>
+                </select>
+                <button type="button" id="startBtn" disabled>Start Quiz</button>
+            </div>
+            
+            <div id="quizContent" style="display: none;">
+                <div class="question-progress" id="progressText"></div>
+                <div class="question-section">
+                    <div class="question-text" id="questionText"></div>
+                    <form id="answerForm">
+                        <div class="answers" id="answersContainer"></div>
+                    </form>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" id="prevBtn">Previous</button>
+                    <button type="button" id="nextBtn">Next</button>
+                    <button type="button" id="submitBtn" style="display: none;">Submit Quiz</button>
+                </div>
+            </div>
+            
+            <div class="results-section" id="resultsSection">
+                <h2>Quiz Complete!</h2>
+                <div class="score" id="scoreDisplay"></div>
+                <p id="scoreMessage"></p>
+                <button type="button" id="restartBtn">Take Another Quiz</button>
+            </div>
+            
+            <div class="button-group" style="margin-top: 20px;">
+                <button id="closeBtn">Quit & Close</button>
+            </div>
+        </div>
+
+        <script>
+            // Configuration
+            const BACKEND_URL = 'http://127.0.0.1:8080';
+            const QUIZ_DB = 'quiz_config';
+            const QUIZ_CONFIG_KEY = 'quizzes';
+            
+            // State management
+            let quizData = null;
+            let currentQuizName = null;
+            let currentQuestionIndex = 0;
+            let userAnswers = {};
+            let quizStarted = false;
+            let allQuizzes = {};
+            
+            // Initialize
+            window.addEventListener('DOMContentLoaded', () => {
+                loadQuizzesFromBackend();
+                setupEventListeners();
+            });
+            
+            // Setup event listeners
+            function setupEventListeners() {
+                document.getElementById('closeBtn').addEventListener('click', closeWindow);
+                document.getElementById('quizSelect').addEventListener('change', onQuizSelected);
+                document. getElementById('startBtn').addEventListener('click', startQuiz);
+                document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+                document.getElementById('prevBtn').addEventListener('click', previousQuestion);
+                document.getElementById('submitBtn').addEventListener('click', submitQuiz);
+                document.getElementById('restartBtn').addEventListener('click', resetQuiz);
+            }
+            
+            // Load quizzes from backend
+            async function loadQuizzesFromBackend() {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/data/read`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json;charset=UTF-8'
+                        },
+                        body: JSON.stringify({ 'dbl': QUIZ_DB, 'key': QUIZ_CONFIG_KEY })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.text();
+                        allQuizzes = JSON.parse(data);
+                        populateQuizSelector();
+                    } else {
+                        console.error('Failed to load quizzes from backend');
+                        alert('Failed to load quiz data. Please ensure the backend is running.');
+                    }
+                } catch (error) {
+                    console.error('Error loading quizzes:', error);
+                    alert('Error loading quiz data:  ' + error.message);
+                }
+            }
+            
+            // Populate quiz selector dropdown
+            function populateQuizSelector() {
+                const select = document.getElementById('quizSelect');
+                Object.keys(allQuizzes).forEach(quizName => {
+                    const option = document.createElement('option');
+                    option.value = quizName;
+                    option. textContent = quizName;
+                    select.appendChild(option);
+                });
+            }
+            
+            // When quiz is selected
+            function onQuizSelected() {
+                const selected = document.getElementById('quizSelect').value;
+                document.getElementById('startBtn').disabled = ! selected;
+                if (selected) {
+                    currentQuizName = selected;
+                    quizData = allQuizzes[selected];
+                }
+            }
+            
+            // Start quiz
+            function startQuiz() {
+                if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+                    alert('No questions available in this quiz');
+                    return;
+                }
+                
+                quizStarted = true;
+                currentQuestionIndex = 0;
+                userAnswers = {};
+                
+                document.getElementById('quizSelector').style.display = 'none';
+                document.getElementById('resultsSection').classList.remove('show');
+                document.getElementById('quizContent').style.display = 'block';
+                
+                displayQuestion();
+            }
+            
+            // Display current question
+            function displayQuestion() {
+                const question = quizData.questions[currentQuestionIndex];
+                const totalQuestions = quizData.questions. length;
+                
+                document.getElementById('progressText').textContent = 
+                    `Question ${currentQuestionIndex + 1} of ${totalQuestions}`;
+                
+                document.getElementById('questionText').textContent = question.question;
+                
+                const answersContainer = document.getElementById('answersContainer');
+                answersContainer.innerHTML = '';
+                
+                question.answers.forEach((answer, index) => {
+                    const label = document.createElement('label');
+                    label.className = 'answer-option';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = 'answer';
+                    input.value = index;
+                    
+                    if (userAnswers[currentQuestionIndex] === index) {
+                        input.checked = true;
+                        label.classList.add('selected');
+                    }
+                    
+                    input.addEventListener('change', (e) => {
+                        // Update visual selection
+                        document.querySelectorAll('. answer-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        label.classList.add('selected');
+                        
+                        // Store answer
+                        userAnswers[currentQuestionIndex] = parseInt(e.target.value);
+                    });
+                    
+                    label.appendChild(input);
+                    label.appendChild(document.createTextNode(answer));
+                    answersContainer.appendChild(label);
+                });
+                
+                // Update button states
+                document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
+                document. getElementById('nextBtn').style.display = 
+                    currentQuestionIndex < totalQuestions - 1 ? 'block' : 'none';
+                document.getElementById('submitBtn').style.display = 
+                    currentQuestionIndex === totalQuestions - 1 ?  'block' : 'none';
+            }
+            
+            // Navigate to next question
+            function nextQuestion() {
+                if (currentQuestionIndex < quizData.questions.length - 1) {
+                    currentQuestionIndex++;
+                    displayQuestion();
+                }
+            }
+            
+            // Navigate to previous question
+            function previousQuestion() {
+                if (currentQuestionIndex > 0) {
+                    currentQuestionIndex--;
+                    displayQuestion();
+                }
+            }
+            
+            // Submit and score quiz
+            function submitQuiz() {
+                // Calculate score
+                let correctCount = 0;
+                quizData.questions.forEach((question, index) => {
+                    if (userAnswers[index] === question.correct) {
+                        correctCount++;
+                    }
+                });
+                
+                const totalQuestions = quizData.questions.length;
+                const percentage = Math.round((correctCount / totalQuestions) * 100);
+                
+                // Display results
+                document.getElementById('scoreDisplay').textContent = 
+                    `${correctCount} / ${totalQuestions} (${percentage}%)`;
+                
+                let message = '';
+                if (percentage === 100) {
+                    message = 'Perfect score!  Excellent work!';
+                } else if (percentage >= 80) {
+                    message = 'Great job! ';
+                } else if (percentage >= 60) {
+                    message = 'Good effort.  Review the material and try again!';
+                } else {
+                    message = 'Keep practicing.  You\'ll improve!';
+                }
+                document.getElementById('scoreMessage').textContent = message;
+                
+                // Save results to backend
+                saveResultsToBackend(correctCount, totalQuestions, percentage);
+                
+                // Show results
+                document.getElementById('quizContent').style.display = 'none';
+                document.getElementById('resultsSection').classList.add('show');
+            }
+            
+            // Save results to backend
+            async function saveResultsToBackend(correctCount, totalQuestions, percentage) {
+                try {
+                    const timestamp = new Date().toISOString();
+                    const resultKey = `result_${currentQuizName}_${timestamp}`;
+                    const resultData = {
+                        quiz:  currentQuizName,
+                        score: correctCount,
+                        total: totalQuestions,
+                        percentage: percentage,
+                        timestamp: timestamp,
+                        answers: userAnswers
+                    };
+                    
+                    await fetch(`${BACKEND_URL}/data/write`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json;charset=UTF-8'
+                        },
+                        body: JSON.stringify({
+                            'dbl':  QUIZ_DB,
+                            'key': resultKey,
+                            'value': JSON.stringify(resultData)
+                        })
+                    });
+                } catch (error) {
+                    console.error('Error saving results:', error);
+                }
+            }
+            
+            // Reset quiz
+            function resetQuiz() {
+                quizStarted = false;
+                currentQuestionIndex = 0;
+                userAnswers = {};
+                currentQuizName = null;
+                
+                document.getElementById('quizSelect').value = '';
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('quizSelector').style.display = 'block';
+                document.getElementById('quizContent').style.display = 'none';
+                document.getElementById('resultsSection').classList.remove('show');
+            }
+            
+            // Close window
+            function closeWindow() {
+                try { 
+                    window.close(); 
+                } catch(e) {}
+                if (window.opener && ! window.opener.closed) {
+                    window.opener.focus();
+                }
+            }
+        </script>
+    </body>
+</html>
