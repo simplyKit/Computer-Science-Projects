@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Tic-Tac-Toe Plus - Multiplayer</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                display:  flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+
+            .game-info {
+                margin-bottom: 20px;
+                text-align: center;
+            }
+
+            .game-info h1 {
+                margin: 10px 0;
+                color:  #333;
+            }
+
+            .game-status {
+                font-size: 18px;
+                font-weight: bold;
+                color: #0066cc;
+            }
+
+            .player-info {
+                display: flex;
+                gap: 40px;
+                margin-bottom:  20px;
+                justify-content: center;
+            }
+
+            .player-display {
+                padding: 10px 20px;
+                border-radius: 5px;
+                border: 2px solid #ccc;
+                min-width: 150px;
+                text-align: center;
+            }
+
+            .player-display.active {
+                background-color: #90EE90;
+                border-color: #006600;
+                font-weight: bold;
+            }
+
+            .gamecontainer {
+                margin:  0 auto;
+                width: 300px;
+                height: 300px;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+                gap: 5px;
+                border: 3px solid black;
+                background-color: #f0f0f0;
+                margin-bottom: 30px;
+            }
+
+            .gamesquare {
+                width: 100%;
+                height:  100%;
+                border: 2px solid black;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background-color: white;
+                cursor: pointer;
+                font-size: 48px;
+                font-weight: bold;
+                transition: background-color 0.2s;
+            }
+
+            .gamesquare:hover:not(.taken) {
+                background-color:  #e0e0e0;
+            }
+
+            .gamesquare.taken {
+                cursor: not-allowed;
+            }
+
+            .gamesquare.x {
+                color: #0066cc;
+            }
+
+            .gamesquare.o {
+                color: #ff3333;
+            }
+
+            .controls {
+                display: flex;
+                gap: 10px;
+                margin-top: 20px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 16px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                background-color: #0066cc;
+                color: white;
+                transition: background-color 0.2s;
+            }
+
+            button:hover {
+                background-color: #0052a3;
+            }
+
+            button:disabled {
+                background-color: #cccccc;
+                cursor: not-allowed;
+            }
+
+            .reset-btn {
+                background-color: #ff6600;
+            }
+
+            .reset-btn:hover {
+                background-color:  #cc5200;
+            }
+
+            .game-result {
+                font-size: 24px;
+                font-weight:  bold;
+                color: #006600;
+                margin-top:  20px;
+                min-height: 30px;
+            }
+
+            .db-section {
+                margin-top: 30px;
+                padding: 20px;
+                border-top: 2px solid #ccc;
+                width: 100%;
+                max-width: 400px;
+            }
+
+            .db-section h3 {
+                margin-top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="game-info">
+            <h1>Tic-Tac-Toe Plus - Multiplayer</h1>
+            <div class="player-info">
+                <div class="player-display" id="playerX">
+                    <div>Player X</div>
+                    <div id="playerXName">You</div>
+                </div>
+                <div class="player-display" id="playerO">
+                    <div>Player O</div>
+                    <div id="playerOName">Opponent</div>
+                </div>
+            </div>
+            <div class="game-status" id="gameStatus">Player X's Turn! </div>
+        </div>
+
+        <div class="gamecontainer" id="gamecontainer">
+            <div class="gamesquare" id="square-a1" data-pos="a1"></div>
+            <div class="gamesquare" id="square-a2" data-pos="a2"></div>
+            <div class="gamesquare" id="square-a3" data-pos="a3"></div>
+            <div class="gamesquare" id="square-b1" data-pos="b1"></div>
+            <div class="gamesquare" id="square-b2" data-pos="b2"></div>
+            <div class="gamesquare" id="square-b3" data-pos="b3"></div>
+            <div class="gamesquare" id="square-c1" data-pos="c1"></div>
+            <div class="gamesquare" id="square-c2" data-pos="c2"></div>
+            <div class="gamesquare" id="square-c3" data-pos="c3"></div>
+        </div>
+
+        <div class="game-result" id="gameResult"></div>
+
+        <div class="controls">
+            <button id="resetBtn" class="reset-btn">New Game</button>
+            <button id="saveBtn">Save Game</button>
+            <button id="loadBtn">Load Game</button>
+        </div>
+
+        <div class="db-section">
+            <h3>Game Session ID</h3>
+            <input type="text" id="sessionId" placeholder="Enter session ID" />
+            <button id="createSessionBtn">Create New Session</button>
+        </div>
+
+        <script>
+            const API_BASE = 'http://127.0.0.1:8080';
+            
+            class TicTacToeGame {
+                constructor() {
+                    this.board = {
+                        'a1': '', 'a2': '', 'a3': '',
+                        'b1': '', 'b2': '', 'b3': '',
+                        'c1': '', 'c2': '', 'c3': ''
+                    };
+                    this.currentPlayer = 'X';
+                    this.gameOver = false;
+                    this. sessionId = null;
+                    this.playerXName = 'Player 1';
+                    this.playerOName = 'Player 2';
+                    this.initializeEventListeners();
+                }
+
+                initializeEventListeners() {
+                    // Game square clicks
+                    document.querySelectorAll('.gamesquare').forEach(square => {
+                        square.addEventListener('click', (e) => this.handleSquareClick(e));
+                    });
+
+                    // Control buttons
+                    document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
+                    document.getElementById('saveBtn').addEventListener('click', () => this.saveGame());
+                    document. getElementById('loadBtn').addEventListener('click', () => this.loadGame());
+                    document.getElementById('createSessionBtn').addEventListener('click', () => this.createSession());
+                }
+
+                handleSquareClick(e) {
+                    const square = e.target;
+                    const pos = square. getAttribute('data-pos');
+
+                    if (this.board[pos] !== '' || this.gameOver) return;
+
+                    this.board[pos] = this.currentPlayer;
+                    this.updateSquareUI(pos);
+
+                    if (this.checkWinner()) {
+                        this.endGame(`Player ${this.currentPlayer} wins!`);
+                        return;
+                    }
+
+                    if (this.isBoardFull()) {
+                        this.endGame("It's a draw!");
+                        return;
+                    }
+
+                    this.switchPlayer();
+                }
+
+                switchPlayer() {
+                    this. currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
+                    this.updateStatus();
+                }
+
+                updateSquareUI(pos) {
+                    const square = document.getElementById(`square-${pos}`);
+                    square.textContent = this. board[pos];
+                    square.classList.add('taken');
+                    square.classList.add(this.board[pos]. toLowerCase());
+                }
+
+                updateStatus() {
+                    const playerName = this.currentPlayer === 'X' ? this.playerXName : this.playerOName;
+                    document. getElementById('gameStatus').textContent = `${playerName}'s Turn (${this.currentPlayer})`;
+                    
+                    // Update active player highlight
+                    document.getElementById('playerX').classList.toggle('active', this.currentPlayer === 'X');
+                    document.getElementById('playerO').classList.toggle('active', this.currentPlayer === 'O');
+                }
+
+                checkWinner() {
+                    const winConditions = [
+                        ['a1', 'a2', 'a3'],
+                        ['b1', 'b2', 'b3'],
+                        ['c1', 'c2', 'c3'],
+                        ['a1', 'b1', 'c1'],
+                        ['a2', 'b2', 'c2'],
+                        ['a3', 'b3', 'c3'],
+                        ['a1', 'b2', 'c3'],
+                        ['a3', 'b2', 'c1']
+                    ];
+
+                    return winConditions.some(condition => {
+                        return condition.every(pos => this.board[pos] === this.currentPlayer);
+                    });
+                }
+
+                isBoardFull() {
+                    return Object.values(this.board).every(cell => cell !== '');
+                }
+
+                endGame(message) {
+                    this.gameOver = true;
+                    document.getElementById('gameResult').textContent = message;
+                    document.getElementById('gameStatus').textContent = message;
+                }
+
+                resetGame() {
+                    this.board = {
+                        'a1': '', 'a2': '', 'a3': '',
+                        'b1': '', 'b2': '', 'b3': '',
+                        'c1': '', 'c2': '', 'c3': ''
+                    };
+                    this.currentPlayer = 'X';
+                    this.gameOver = false;
+                    
+                    document.querySelectorAll('.gamesquare').forEach(square => {
+                        square.textContent = '';
+                        square. classList.remove('taken', 'x', 'o');
+                    });
+                    
+                    document.getElementById('gameResult').textContent = '';
+                    this.updateStatus();
+                }
+
+                // Backend Integration Methods
+                async saveGame() {
+                    if (!this.sessionId) {
+                        alert('Please create a session first! ');
+                        return;
+                    }
+
+                    const gameState = {
+                        board: this.board,
+                        currentPlayer: this.currentPlayer,
+                        gameOver: this.gameOver,
+                        playerXName: this.playerXName,
+                        playerOName:  this.playerOName
+                    };
+
+                    try {
+                        const params = new URLSearchParams();
+                        params.append('db', '0');
+                        params.append('key', `game: ${this.sessionId}`);
+                        params.append('value', JSON.stringify(gameState));
+
+                        const response = await fetch(`${API_BASE}/data/write?${params.toString()}`);
+                        alert('Game saved successfully!');
+                    } catch (error) {
+                        console.error('Error saving game:', error);
+                        alert('Failed to save game');
+                    }
+                }
+
+                async loadGame() {
+                    if (!this.sessionId) {
+                        alert('Please create a session first!');
+                        return;
+                    }
+
+                    try {
+                        const params = new URLSearchParams();
+                        params.append('db', '0');
+                        params.append('key', `game:${this.sessionId}`);
+
+                        const response = await fetch(`${API_BASE}/data/read?${params.toString()}`);
+                        const gameStateJson = await response.text();
+                        const gameState = JSON.parse(gameStateJson);
+
+                        this. board = gameState.board;
+                        this.currentPlayer = gameState.currentPlayer;
+                        this.gameOver = gameState. gameOver;
+                        this. playerXName = gameState.playerXName;
+                        this. playerOName = gameState.playerOName;
+
+                        this. renderBoard();
+                        this.updateStatus();
+                        alert('Game loaded successfully!');
+                    } catch (error) {
+                        console.error('Error loading game:', error);
+                        alert('Failed to load game');
+                    }
+                }
+
+                async createSession() {
+                    const sessionInput = document.getElementById('sessionId');
+                    const sessionId = sessionInput.value.trim() || `session-${Date.now()}`;
+
+                    this.sessionId = sessionId;
+                    sessionInput.value = sessionId;
+
+                    try {
+                        const params = new URLSearchParams();
+                        params.append('db', '0');
+                        params.append('key', `session:${sessionId}`);
+                        params.append('value', JSON.stringify({ created: new Date().toISOString() }));
+
+                        const response = await fetch(`${API_BASE}/data/write?${params.toString()}`);
+                        alert(`Session created/joined:  ${sessionId}`);
+                    } catch (error) {
+                        console.error('Error creating session:', error);
+                        alert('Failed to create session');
+                    }
+                }
+
+                renderBoard() {
+                    Object.entries(this.board).forEach(([pos, value]) => {
+                        const square = document.getElementById(`square-${pos}`);
+                        square.textContent = value;
+                        square.classList.remove('taken', 'x', 'o');
+                        
+                        if (value !== '') {
+                            square.classList.add('taken');
+                            square.classList.add(value.toLowerCase());
+                        }
+                    });
+
+                    document.getElementById('playerXName').textContent = this.playerXName;
+                    document. getElementById('playerOName').textContent = this.playerOName;
+                }
+            }
+
+            // Initialize the game
+            const game = new TicTacToeGame();
+            game.updateStatus();
+        </script>
+    </body>
+</html>
